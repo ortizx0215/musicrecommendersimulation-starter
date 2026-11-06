@@ -32,9 +32,23 @@ class UserProfile:
 
 # --- Algorithm Recipe weights (max total = 5.0) ---
 ENERGY_WEIGHT = 2.0
-MOOD_WEIGHT = 1.5
-GENRE_WEIGHT = 1.0
+GENRE_WEIGHT = 1.5
+MOOD_WEIGHT = 1.0
 ACOUSTIC_WEIGHT = 0.5
+
+# A "related" genre or mood earns this fraction of the full match points.
+PARTIAL_CREDIT = 0.5
+
+# Energy gap at which a song earns zero energy points.
+ENERGY_TOLERANCE = 0.5
+
+# Moods that feel alike; a song in the same family as the user's mood is "related".
+MOOD_FAMILIES = [
+    {"chill", "relaxed", "peaceful", "focused"},
+    {"sad", "melancholy", "nostalgic", "moody"},
+    {"happy", "playful", "uplifting", "euphoric", "romantic"},
+    {"intense", "angry", "confident"},
+]
 
 NUMERIC_FIELDS = ("energy", "tempo_bpm", "valence", "danceability", "acousticness")
 
@@ -55,6 +69,7 @@ class Recommender:
     Required by tests/test_recommender.py
     """
     def __init__(self, songs: List[Song]):
+        """Stores the song catalog this recommender will rank."""
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
@@ -86,6 +101,28 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 
+def _genres_related(a: str, b: str) -> bool:
+    """True when one genre name contains the other, e.g. 'indie pop' and 'pop'."""
+    return a in b or b in a
+
+
+def _moods_related(a: str, b: str) -> bool:
+    """True when both moods belong to the same mood family."""
+    return any(a in family and b in family for family in MOOD_FAMILIES)
+
+
+def _match_points(song_value: str, user_value: str, weight: float, related) -> Tuple[float, str]:
+    """Returns (points, kind) for an exact, related, or missing categorical match."""
+    song_value, user_value = song_value.lower(), user_value.lower()
+    if not user_value:
+        return 0.0, ""
+    if song_value == user_value:
+        return weight, "matches"
+    if related(song_value, user_value):
+        return weight * PARTIAL_CREDIT, f"is related to '{user_value}'"
+    return 0.0, ""
+
+
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores a single song against user preferences (the Scoring Rule).
@@ -98,21 +135,29 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     reasons: List[str] = []
 
     # Energy: reward closeness to the target, not higher/lower values.
+    # Points fall off linearly and hit zero at ENERGY_TOLERANCE away.
     if "energy" in user_prefs:
-        similarity = 1 - abs(song["energy"] - user_prefs["energy"])
+        gap = abs(song["energy"] - user_prefs["energy"])
+        similarity = max(0.0, 1 - gap / ENERGY_TOLERANCE)
         points = ENERGY_WEIGHT * similarity
         score += points
         reasons.append(
             f"energy {song['energy']:.2f} vs target {user_prefs['energy']:.2f} (+{points:.2f})"
         )
 
-    if song["mood"].lower() == str(user_prefs.get("mood", "")).lower():
-        score += MOOD_WEIGHT
-        reasons.append(f"mood matches '{song['mood']}' (+{MOOD_WEIGHT:.2f})")
+    points, kind = _match_points(
+        song["genre"], str(user_prefs.get("genre", "")), GENRE_WEIGHT, _genres_related
+    )
+    if points:
+        score += points
+        reasons.append(f"genre '{song['genre']}' {kind} (+{points:.2f})")
 
-    if song["genre"].lower() == str(user_prefs.get("genre", "")).lower():
-        score += GENRE_WEIGHT
-        reasons.append(f"genre matches '{song['genre']}' (+{GENRE_WEIGHT:.2f})")
+    points, kind = _match_points(
+        song["mood"], str(user_prefs.get("mood", "")), MOOD_WEIGHT, _moods_related
+    )
+    if points:
+        score += points
+        reasons.append(f"mood '{song['mood']}' {kind} (+{points:.2f})")
 
     # Acoustic fit: only applied when the user stated a preference.
     if "likes_acoustic" in user_prefs:
@@ -135,16 +180,17 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     Returns a list of (song_dict, score, explanation).
     """
     target_energy = user_prefs.get("energy", 0.5)
-    scored = []
-    for song in songs:
-        score, reasons = score_song(user_prefs, song)
-        scored.append((song, score, "; ".join(reasons)))
 
-    scored.sort(
+    # Judge every song: score_song returns (score, reasons) for each one.
+    judged = [(song, *score_song(user_prefs, song)) for song in songs]
+
+    # sorted() returns a new ranked list and leaves the caller's catalog untouched.
+    ranked = sorted(
+        judged,
         key=lambda item: (
-            -item[1],
-            abs(item[0]["energy"] - target_energy),
-            item[0]["title"],
-        )
+            -item[1],                                   # highest score first
+            abs(item[0]["energy"] - target_energy),     # tie: closer energy wins
+            item[0]["title"],                           # tie: alphabetical
+        ),
     )
-    return scored[:k]
+    return [(song, score, "; ".join(reasons)) for song, score, reasons in ranked[:k]]
