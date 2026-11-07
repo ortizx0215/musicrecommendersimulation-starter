@@ -287,11 +287,31 @@ Profile: Late-Night R&B
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+### Experiment 1: Weight shift (double energy, halve genre)
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+**Change:** `ENERGY_WEIGHT` 2.0 → 4.0 and `GENRE_WEIGHT` 1.5 → 0.75 in `src/recommender.py`. Mood (1.0) and acoustic (0.5) stayed the same, so the maximum score went from 5.0 to 6.25.
+
+**Checking the math:** `MAX_SCORE` used to be hard-coded as 5.0 in `main.py`, which would have printed impossible scores like "6.18 / 5.00". It is now computed from the weights in `recommender.py`. Across all 280 song × profile pairs (including the adversarial profiles in `src/evaluate.py`), every score stayed between 0 and 6.25, a perfect match scored exactly 6.25, and related-genre partial credit stayed at exactly half the genre weight.
+
+**Top 5 before → after:**
+
+| Profile | Rank | Before (baseline) | After (experiment) |
+|---|---|---|---|
+| High-Energy Pop | #4 | Bassline Fever (edm, energy 0.95) | Fuego Lento (latin, energy 0.78) |
+| High-Energy Pop | #5 | Fuego Lento (latin, energy 0.78) | Bassline Fever (edm, energy 0.95) |
+| Chill Lofi | all | no change | no change |
+| Deep Intense Rock | #5 | Concrete Verses (hip hop, confident) | Sunrise City (pop, happy) |
+| Late-Night R&B | #4 | Velvet Static (r&b, romantic) | Coffee Shop Stories (jazz, relaxed) |
+| Late-Night R&B | #5 | Coffee Shop Stories (jazz, relaxed) | Focus Flow (lofi, focused) |
+
+**Result: different, not more accurate.**
+
+- The top 3 did not change for any profile. Songs that match on genre, mood and energy at once win under either set of weights.
+- High-Energy Pop: neutral. Fuego Lento's energy is slightly closer to the target, and either song works at #4.
+- Deep Intense Rock: worse. A happy pop song pushed out a confident hip-hop track for an intense rock listener, only because its energy was 0.1 closer.
+- Late-Night R&B: worse. Velvet Static, the only R&B song in the catalog, dropped out of the top 5. The user named a genre and got no songs from it.
+
+With energy at 64% of the maximum score, the recommender became an energy matcher that mostly ignores genre. That goes the wrong way for the Late-Night R&B problem: Velvet Static would need `GENRE_WEIGHT` above about 1.9 to rank #1 for that profile. The weights were reverted to the baseline (energy 2.0, genre 1.5). The computed `MAX_SCORE` was kept.
 
 ---
 
