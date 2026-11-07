@@ -2,16 +2,9 @@
 
 ## Project Summary
 
-In this project you will build and explain a small music recommender system.
+**TuneScout 1.0** is a small content-based music recommender that runs from the command line. You describe your taste with four settings: a favorite genre, a mood, a target energy level (0 to 1), and whether you like acoustic music. TuneScout scores all 20 songs in its catalog against those settings and prints the top 5, with a list of reasons for every pick.
 
-Your goal is to:
-
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-Replace this paragraph with your own summary of what your version does.
+Along the way I tested it on four everyday listener profiles and ten "trick" profiles built to break it, fixed the bugs those profiles exposed, ran a weight-shift experiment, and documented its biases. The full write-up is in the [Model Card](model_card.md).
 
 ---
 
@@ -63,11 +56,11 @@ The maximum score is 5.0. Each song also gets a list of reasons explaining where
 
 ### Expected Biases
 
-- **Genre can outweigh a better overall fit.** A genre match (+1.5) makes up for a large energy miss. For an r&b/chill/0.35 user, Velvet Static (r&b, energy 0.52) scores 2.82, close to Library Rain's 3.00, which matches energy and mood exactly. A great song that matches the user's mood and energy but not their genre can still lose to a weaker song in the right genre.
+- **Genre and "vibe" pull against each other.** A genre match (+1.5) is worth less than matching mood and energy together (up to +3.0). For an r&b/chill/0.35 user, Library Rain (lofi, chill, energy 0.35) scores 3.43 and beats Velvet Static, the only r&b song (romantic, energy 0.52), at 3.02. A listener who names a genre can get songs from other genres first when their genre's songs don't match the vibe. Raising the genre weight to about 1.9 flips this result, but then a song in the right genre can win despite a poor energy match.
 - **Users with a rare genre get thin results.** The catalog has 17 genres across 20 songs. A lofi fan gets three genre matches, but a metal or classical fan gets one, and the rest of their top 5 is filled by songs that only share an energy level (e.g. a rock fan gets EDM and pop).
 - **Mood families are my own judgment calls.** Grouping "romantic" with "happy" or "moody" with "sad" reflects my own interpretation, not a universal truth, and other listeners would group them differently.
 - **Valence is ignored.** A sad, low-energy listener can be recommended calm but upbeat songs (e.g. Spacewalk Thoughts) because the system only checks energy and the mood label, not how positive the song sounds.
-- **Substring genre matching can produce false matches.** "pop" counts as related to "indie pop" as intended, but it would also count "k-pop" or "pop punk" as related, even though those are quite different styles.
+- **Genre matching is word-based and literal.** Genres count as related only when they share their last word, so "indie pop" is related to "pop" but "k-pop" and "pop punk" are not. (An earlier substring version wrongly matched "k-pop" to "pop" and "indie" to both "indie pop" and "indie folk". The edge-case tests caught this, and it is fixed.) The rule still can't recognize related genres with different names, like "hip hop" and "rap."
 - **No variety control.** Nothing stops one artist or one sound from filling the whole top 5. The system recommends more of what the user already likes and never suggests something new.
 
 ---
@@ -98,13 +91,19 @@ python -m src.main
 
 ### Running Tests
 
-Run the starter tests with:
+Run the tests with:
 
 ```bash
 pytest
 ```
 
-You can add more tests in `tests/test_recommender.py`.
+The tests in `tests/test_recommender.py` cover ranking, explanations, and every edge-case bug found during evaluation (padded text, `"False"` as a string, out-of-range or text energy values, and genre matching).
+
+To run the adversarial "trick" profiles and see how the scoring handles them:
+
+```bash
+python -m src.evaluate
+```
 
 ---
 
@@ -317,15 +316,13 @@ With energy at 64% of the maximum score, the recommender became an energy matche
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+- **Tiny catalog.** 20 songs across 17 genres means most genres have exactly one song, so many listeners get at most one match in their genre.
+- **Energy decides most rankings.** In this catalog, mood and acousticness both move almost in lockstep with energy (energy vs. acousticness correlation is −0.96). Listeners with mixed tastes, like "sad but high energy" or "upbeat but acoustic," get poor matches.
+- **It only sees labels and numbers.** It knows nothing about lyrics, language, artists' style, or what a song is *for*. Gym Hero, a workout song, still ranks #3 for a happy pop fan.
+- **No learning and no variety.** It never learns from what you play or skip, and nothing stops the top 5 from all sounding the same.
+- **Hand-made labels.** I chose every song's mood and the mood families myself, so the results carry my own judgment.
 
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+See sections 6 and 7 of the [Model Card](model_card.md) for the evidence behind these.
 
 ---
 
@@ -335,10 +332,9 @@ Read and complete `model_card.md`:
 
 [**Model Card**](model_card.md)
 
-Write 1 to 2 paragraphs here about what you learned:
+A recommender turns data into predictions by turning "taste" into numbers and adding them up. TuneScout never knows whether you'll like a song. It only measures how close a song's labels are to your four settings, and the weights decide which kind of closeness matters most. That simple math still produces lists that feel personal, which surprised me. It also means every result depends on choices someone made: which features to score, how much each one counts, and how songs are labeled.
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+Bias showed up in places I didn't expect. Nothing in the code favors any group of listeners, but the catalog does. Calm songs are acoustic and loud songs are electric, so people whose tastes don't follow that pattern quietly get worse recommendations. One genre with a single song meant an R&B fan got mostly lofi. Real apps have millions of songs, but the same thing can happen at a larger scale: whatever is missing or under-labeled in the data becomes a blind spot for the users who want it.
 
 
 
