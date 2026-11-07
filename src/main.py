@@ -20,12 +20,29 @@ DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "songs.csv"
 MAX_SCORE = 5.0
 WIDTH = 60
 
+# Distinct taste profiles used to test how the recommender behaves for different listeners.
+PROFILES = {
+    "High-Energy Pop": {
+        "genre": "pop", "mood": "happy", "energy": 0.85, "likes_acoustic": False,
+    },
+    "Chill Lofi": {
+        "genre": "lofi", "mood": "chill", "energy": 0.35, "likes_acoustic": True,
+    },
+    "Deep Intense Rock": {
+        "genre": "rock", "mood": "intense", "energy": 0.92, "likes_acoustic": False,
+    },
+    "Late-Night R&B": {
+        "genre": "r&b", "mood": "chill", "energy": 0.35, "likes_acoustic": True,
+    },
+}
 
-def print_recommendations(user_prefs: dict, recommendations: list) -> None:
+
+def print_recommendations(name: str, user_prefs: dict, recommendations: list) -> None:
     """Prints the user profile and a numbered list of songs with scores and reasons."""
     profile = ", ".join(f"{key}={value}" for key, value in user_prefs.items())
     print("=" * WIDTH)
-    print(f"User profile: {profile}")
+    print(f"Profile: {name}")
+    print(f"  {profile}")
     print("=" * WIDTH)
 
     for rank, (song, score, explanation) in enumerate(recommendations, start=1):
@@ -38,16 +55,14 @@ def print_recommendations(user_prefs: dict, recommendations: list) -> None:
 
 
 def main() -> None:
-    """Loads the catalog, ranks songs for the default profile, and prints the top 5."""
+    """Loads the catalog, ranks songs for every profile in PROFILES, and prints each top 5."""
     songs = load_songs(str(DATA_PATH))
     print(f"Loaded songs: {len(songs)}\n")
 
-    # Default taste profile: upbeat pop, happy mood, high energy, prefers non-acoustic.
-    # Alternative to try: {"genre": "r&b", "mood": "chill", "energy": 0.35, "likes_acoustic": True}
-    user_prefs = {"genre": "pop", "mood": "happy", "energy": 0.8, "likes_acoustic": False}
-
-    recommendations = recommend_songs(user_prefs, songs, k=5)
-    print_recommendations(user_prefs, recommendations)
+    for name, user_prefs in PROFILES.items():
+        recommendations = recommend_songs(user_prefs, songs, k=5)
+        print_recommendations(name, user_prefs, recommendations)
+        print()
 
 
 if __name__ == "__main__":
