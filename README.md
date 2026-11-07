@@ -110,46 +110,173 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Sample Recommendation Output
 
-Output of `python -m src.main` for the default pop/happy profile:
+Output of `python -m src.main`, which loads 20 songs and prints the top 5 recommendations for each of four taste profiles.
+
+### High-Energy Pop
 
 ```
-Loaded songs: 20
-
 ============================================================
-User profile: genre=pop, mood=happy, energy=0.8, likes_acoustic=False
+Profile: High-Energy Pop
+  genre=pop, mood=happy, energy=0.85, likes_acoustic=False
 ============================================================
 
 1. Sunrise City by Neon Echo
-   Score: 4.83 / 5.00   (pop, happy)
-     - energy 0.82 vs target 0.80 (+1.92)
+   Score: 4.79 / 5.00   (pop, happy)
+     - energy 0.82 vs target 0.85 (+1.88)
      - genre 'pop' matches (+1.50)
      - mood 'happy' matches (+1.00)
      - non-acoustic fit (+0.41)
 
 2. Rooftop Lights by Indigo Parade
-   Score: 3.92 / 5.00   (indie pop, happy)
-     - energy 0.76 vs target 0.80 (+1.84)
+   Score: 3.71 / 5.00   (indie pop, happy)
+     - energy 0.76 vs target 0.85 (+1.64)
      - genre 'indie pop' is related to 'pop' (+0.75)
      - mood 'happy' matches (+1.00)
      - non-acoustic fit (+0.33)
 
 3. Gym Hero by Max Pulse
-   Score: 3.46 / 5.00   (pop, intense)
-     - energy 0.93 vs target 0.80 (+1.48)
+   Score: 3.65 / 5.00   (pop, intense)
+     - energy 0.93 vs target 0.85 (+1.68)
      - genre 'pop' matches (+1.50)
      - non-acoustic fit (+0.47)
 
-4. Fuego Lento by Los Brisas
-   Score: 2.77 / 5.00   (latin, playful)
-     - energy 0.78 vs target 0.80 (+1.92)
+4. Bassline Fever by Kilowatt Kids
+   Score: 2.59 / 5.00   (edm, euphoric)
+     - energy 0.95 vs target 0.85 (+1.60)
+     - mood 'euphoric' is related to 'happy' (+0.50)
+     - non-acoustic fit (+0.49)
+
+5. Fuego Lento by Los Brisas
+   Score: 2.57 / 5.00   (latin, playful)
+     - energy 0.78 vs target 0.85 (+1.72)
      - mood 'playful' is related to 'happy' (+0.50)
      - non-acoustic fit (+0.35)
 
-5. Bassline Fever by Kilowatt Kids
-   Score: 2.39 / 5.00   (edm, euphoric)
-     - energy 0.95 vs target 0.80 (+1.40)
-     - mood 'euphoric' is related to 'happy' (+0.50)
+============================================================
+```
+
+### Chill Lofi
+
+```
+============================================================
+Profile: Chill Lofi
+  genre=lofi, mood=chill, energy=0.35, likes_acoustic=True
+============================================================
+
+1. Library Rain by Paper Lanterns
+   Score: 4.93 / 5.00   (lofi, chill)
+     - energy 0.35 vs target 0.35 (+2.00)
+     - genre 'lofi' matches (+1.50)
+     - mood 'chill' matches (+1.00)
+     - acoustic fit (+0.43)
+
+2. Midnight Coding by LoRoom
+   Score: 4.58 / 5.00   (lofi, chill)
+     - energy 0.42 vs target 0.35 (+1.72)
+     - genre 'lofi' matches (+1.50)
+     - mood 'chill' matches (+1.00)
+     - acoustic fit (+0.35)
+
+3. Focus Flow by LoRoom
+   Score: 4.19 / 5.00   (lofi, focused)
+     - energy 0.40 vs target 0.35 (+1.80)
+     - genre 'lofi' matches (+1.50)
+     - mood 'focused' is related to 'chill' (+0.50)
+     - acoustic fit (+0.39)
+
+4. Spacewalk Thoughts by Orbit Bloom
+   Score: 3.18 / 5.00   (ambient, chill)
+     - energy 0.28 vs target 0.35 (+1.72)
+     - mood 'chill' matches (+1.00)
+     - acoustic fit (+0.46)
+
+5. Coffee Shop Stories by Slow Stereo
+   Score: 2.87 / 5.00   (jazz, relaxed)
+     - energy 0.37 vs target 0.35 (+1.92)
+     - mood 'relaxed' is related to 'chill' (+0.50)
+     - acoustic fit (+0.45)
+
+============================================================
+```
+
+### Deep Intense Rock
+
+```
+============================================================
+Profile: Deep Intense Rock
+  genre=rock, mood=intense, energy=0.92, likes_acoustic=False
+============================================================
+
+1. Storm Runner by Voltline
+   Score: 4.91 / 5.00   (rock, intense)
+     - energy 0.91 vs target 0.92 (+1.96)
+     - genre 'rock' matches (+1.50)
+     - mood 'intense' matches (+1.00)
+     - non-acoustic fit (+0.45)
+
+2. Gym Hero by Max Pulse
+   Score: 3.44 / 5.00   (pop, intense)
+     - energy 0.93 vs target 0.92 (+1.96)
+     - mood 'intense' matches (+1.00)
+     - non-acoustic fit (+0.47)
+
+3. Iron Cathedral by Graveborne
+   Score: 2.79 / 5.00   (metal, angry)
+     - energy 0.97 vs target 0.92 (+1.80)
+     - mood 'angry' is related to 'intense' (+0.50)
+     - non-acoustic fit (+0.48)
+
+4. Bassline Fever by Kilowatt Kids
+   Score: 2.37 / 5.00   (edm, euphoric)
+     - energy 0.95 vs target 0.92 (+1.88)
      - non-acoustic fit (+0.49)
+
+5. Concrete Verses by Blockline
+   Score: 2.14 / 5.00   (hip hop, confident)
+     - energy 0.72 vs target 0.92 (+1.20)
+     - mood 'confident' is related to 'intense' (+0.50)
+     - non-acoustic fit (+0.44)
+
+============================================================
+```
+
+### Late-Night R&B
+
+```
+============================================================
+Profile: Late-Night R&B
+  genre=r&b, mood=chill, energy=0.35, likes_acoustic=True
+============================================================
+
+1. Library Rain by Paper Lanterns
+   Score: 3.43 / 5.00   (lofi, chill)
+     - energy 0.35 vs target 0.35 (+2.00)
+     - mood 'chill' matches (+1.00)
+     - acoustic fit (+0.43)
+
+2. Spacewalk Thoughts by Orbit Bloom
+   Score: 3.18 / 5.00   (ambient, chill)
+     - energy 0.28 vs target 0.35 (+1.72)
+     - mood 'chill' matches (+1.00)
+     - acoustic fit (+0.46)
+
+3. Midnight Coding by LoRoom
+   Score: 3.08 / 5.00   (lofi, chill)
+     - energy 0.42 vs target 0.35 (+1.72)
+     - mood 'chill' matches (+1.00)
+     - acoustic fit (+0.35)
+
+4. Velvet Static by Mara Lune
+   Score: 3.02 / 5.00   (r&b, romantic)
+     - energy 0.52 vs target 0.35 (+1.32)
+     - genre 'r&b' matches (+1.50)
+     - acoustic fit (+0.20)
+
+5. Coffee Shop Stories by Slow Stereo
+   Score: 2.87 / 5.00   (jazz, relaxed)
+     - energy 0.37 vs target 0.35 (+1.92)
+     - mood 'relaxed' is related to 'chill' (+0.50)
+     - acoustic fit (+0.45)
 
 ============================================================
 ```
