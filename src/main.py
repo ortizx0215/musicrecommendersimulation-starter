@@ -12,12 +12,11 @@ You will implement the functions in recommender.py:
 from pathlib import Path
 
 try:
-    from src.recommender import load_songs, recommend_songs  # python -m src.main
+    from src.recommender import MAX_SCORE, load_songs, recommend_songs  # python -m src.main
 except ImportError:
-    from recommender import load_songs, recommend_songs  # python src/main.py
+    from recommender import MAX_SCORE, load_songs, recommend_songs  # python src/main.py
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "songs.csv"
-MAX_SCORE = 5.0
 WIDTH = 60
 
 # Distinct taste profiles used to test how the recommender behaves for different listeners.

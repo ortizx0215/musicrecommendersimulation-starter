@@ -30,11 +30,15 @@ class UserProfile:
     target_energy: float
     likes_acoustic: bool
 
-# --- Algorithm Recipe weights (max total = 5.0) ---
+# --- Algorithm Recipe weights (max total = MAX_SCORE below) ---
 ENERGY_WEIGHT = 2.0
 GENRE_WEIGHT = 1.5
 MOOD_WEIGHT = 1.0
 ACOUSTIC_WEIGHT = 0.5
+
+# Highest possible score: every component at full credit. Derived so it stays
+# correct whenever the weights above change.
+MAX_SCORE = ENERGY_WEIGHT + GENRE_WEIGHT + MOOD_WEIGHT + ACOUSTIC_WEIGHT
 
 # A "related" genre or mood earns this fraction of the full match points.
 PARTIAL_CREDIT = 0.5

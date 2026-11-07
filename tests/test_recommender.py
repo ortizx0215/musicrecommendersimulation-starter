@@ -65,7 +65,10 @@ def test_explain_recommendation_returns_non_empty_string():
 
 import pytest
 
-from src.recommender import normalize_prefs, score_song, recommend_songs, _genres_related
+from src.recommender import (
+    normalize_prefs, score_song, recommend_songs, _genres_related,
+    ENERGY_WEIGHT, GENRE_WEIGHT, MOOD_WEIGHT,
+)
 
 
 def song_dict(**overrides) -> dict:
@@ -81,7 +84,7 @@ def song_dict(**overrides) -> dict:
 def test_padded_and_capitalized_genre_still_exact_match():
     clean, _ = score_song({"genre": "pop", "mood": "happy"}, song_dict())
     messy, _ = score_song({"genre": " Pop ", "mood": " HAPPY"}, song_dict())
-    assert messy == clean == 2.5
+    assert messy == clean == GENRE_WEIGHT + MOOD_WEIGHT
 
 
 def test_string_false_means_dislikes_acoustic():
@@ -96,7 +99,7 @@ def test_unparseable_acoustic_raises():
 
 def test_string_energy_is_converted_not_crash():
     score, _ = score_song({"energy": "0.8"}, song_dict(energy=0.8))
-    assert score == 2.0
+    assert score == ENERGY_WEIGHT
 
 
 def test_non_numeric_energy_raises_value_error():
