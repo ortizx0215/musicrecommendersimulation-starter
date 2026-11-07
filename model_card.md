@@ -1,61 +1,79 @@
 # 🎧 Model Card: Music Recommender Simulation
 
 ## 1. Model Name  
+**TuneScout 1.0**
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+TuneScout scouts a small song catalog for tracks that fit your vibe.
 
 ---
 
-## 2. Intended Use  
+## 2. Goal and Intended Use  
+### Goal / Task
 
-Describe what your recommender is designed to do and who it is for. 
+TuneScout suggests songs you might like. You tell it four things: a favorite genre, a mood, how energetic you want the music to be (0 to 1), and whether you like acoustic sound. It gives every song a score and shows you the top 5. Each pick comes with a list of reasons, so you can see why it was chosen.
 
-Prompts:  
+It does not learn from you. It does not know what you played before or what other people like. It only compares your four answers to the facts about each song.
 
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+### Intended use
+
+- A classroom project for learning how recommenders work.
+- Exploring how small changes to weights change the results.
+- Showing why a song was picked, step by step.
+
+### Non-intended use
+
+- Real users on a real music app. The catalog has only 20 songs.
+- Judging what music is "good." The scores only measure fit with four settings.
+- Any decision that matters to a person, like ads or hiring. The system has known biases (see section 6).
+- Users with mixed tastes, like "sad but high energy." It handles them poorly.
 
 ---
 
 ## 3. How the Model Works  
+### Algorithm summary
 
-Explain your scoring approach in simple language.  
+Think of it like a judge giving points. Every song can earn up to 5 points:
 
-Prompts:  
+- **Energy (up to 2 points).** The closer the song's energy is to what you asked for, the more points. A song that is way off (0.5 or more away) gets nothing here.
+- **Genre (up to 1.5 points).** Full points if it's your genre. Half points if it's a close cousin, like "indie pop" for a pop fan.
+- **Mood (up to 1 point).** Full points if it's your mood. Half points if it's a similar mood, like "relaxed" for someone who wants "chill."
+- **Acoustic sound (up to 0.5 points).** If you like acoustic music, more acoustic songs get more points. If you don't, less acoustic songs get more.
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
+TuneScout adds up the points for every song and sorts them from highest to lowest. If two songs tie, the one closer to your energy level wins.
 
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+### Changes from the starter
+
+- I picked the weights by testing a few versions on real profiles. Energy counts most because it's the strongest "vibe" signal.
+- I added "close cousin" half credit for related genres and moods.
+- I made TuneScout clean up messy input. Extra spaces, capital letters, numbers typed as text, and energy values outside 0 to 1 are now handled.
+- The highest possible score is now calculated from the weights, so it stays correct if the weights change.
 
 ---
 
 ## 4. Data  
+### Data used
 
-Describe the dataset the model uses.  
+- **Size:** 20 songs. I grew the starter catalog from 10 to 20.
+- **Variety:** 17 genres and 16 moods. Most genres have only one song. Lofi has the most, with 3.
+- **Features per song:** title, artist, genre, mood, energy, tempo, valence (how positive it sounds), danceability, and acousticness.
+- **Features actually scored:** genre, mood, energy, and acousticness. Tempo and danceability mostly follow energy, so scoring them would count the same thing twice. Valence is not used.
 
-Prompts:  
+### Limits of the data
 
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+- 20 songs is tiny. Fans of most genres get one genre match at best.
+- Energy and acousticness are almost perfect opposites in this catalog. Loud songs are electric and quiet songs are acoustic.
+- There are no loud acoustic songs and no high-energy sad songs.
+- I made up the songs and labels myself. They reflect my own sense of what "chill" or "intense" means.
+- There is no lyrics, language, era, or listening-history data.
 
 ---
 
 ## 5. Strengths  
-
-Where does your system seem to work well  
-
-Prompts:  
-
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+- **Clear-cut tastes work great.** When genre, mood, and energy all point the same way, the #1 pick is spot on. Chill Lofi gets Library Rain (4.93 out of 5). Deep Intense Rock gets Storm Runner (4.91).
+- **Opposite users get opposite lists.** The pop and lofi lists share zero songs, and so do the rock and lofi lists. That is what you'd expect.
+- **The reasons are easy to check.** Every pick lists where its points came from. That made it easy to spot problems, like why Gym Hero shows up for a pop fan.
+- **Near misses still count.** A pop fan still gets indie pop. A chill fan still gets "relaxed" and "focused" songs.
+- **It doesn't break on messy input.** After the fixes, odd input like `" Pop "` or an energy of 1.5 still gives sensible results.
 
 ---
 
@@ -123,24 +141,17 @@ Gym Hero passes three of the four checks, and missing the mood only costs it 1 p
 ---
 
 ## 8. Future Work  
-
-Ideas for how you would improve the model next.  
-
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+1. **Add more songs, especially the missing combos.** Add loud acoustic songs, high-energy sad songs, and a few more songs per genre. This would fix the Late-Night R&B problem without touching any weights.
+2. **Add a variety rule.** Don't let one artist or one sound take over the top 5. Save one slot for a "wild card" that is a little outside your usual taste.
+3. **Let users say what matters most to them.** Some people care about genre above all, others only care about the vibe. Letting each user set their own weights would help people with mixed tastes.
 
 ---
 
 ## 9. Personal Reflection  
+**My biggest learning moment** was the Late-Night R&B profile. I expected the R&B song to win. Instead, a lofi song came first because it matched the mood, the energy, and the acoustic setting all at once. Working out the points by hand showed me the R&B song needed a genre weight of about 1.9 to win. Every weight is a trade-off. Fixing one user's list can make another user's list worse, like when doubling energy pushed the R&B song out of the top 5 completely.
 
-A few sentences about your experience.  
+**Using AI tools** sped things up a lot. The AI suggested "trick" profiles I would not have thought of, like typing `"False"` as text. That one exposed a real bug. It also ran the math checks and before/after comparisons quickly. But I still had to double-check its work. Some of the tests it wrote had the old weights hard-coded, so they broke when I changed the weights. The score display was also stuck at "/ 5.00" until we caught it. I learned to ask the AI to *show* the numbers by running the code, not just to explain them.
 
-Prompts:  
+**What surprised me** is how real the results feel from just four checks and some addition. The lists for clear-cut tastes look like something a friend would make. But it also showed me how easy it is to be fooled. Gym Hero "feels" like a fine pick for a pop fan, even though the system has no idea it's a workout song. The scores look precise, but they only measure what I chose to measure.
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+**If I kept going,** I would grow the catalog first, since many problems came from missing songs, not bad math. Then I would add a variety rule and try mixing in "people who liked this also liked..." data. I'm curious how much that would help people with mixed tastes.
