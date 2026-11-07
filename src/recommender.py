@@ -101,9 +101,58 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 
+_TRUE_STRINGS = {"true", "yes", "y", "1"}
+_FALSE_STRINGS = {"false", "no", "n", "0", ""}
+
+
+def _to_bool(value) -> bool:
+    """Parses a bool, rejecting ambiguous strings (plain bool('False') would be True)."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in _TRUE_STRINGS:
+            return True
+        if text in _FALSE_STRINGS:
+            return False
+    raise ValueError(f"likes_acoustic must be true/false, got {value!r}")
+
+
+def normalize_prefs(user_prefs: Dict) -> Dict:
+    """
+    Cleans raw user preferences so scoring can't be tricked by messy input.
+
+    - genre/mood: stripped and lowercased (' Pop ' -> 'pop')
+    - energy: converted to float and clamped to 0.0-1.0 ('0.8' -> 0.8, 1.5 -> 1.0)
+    - likes_acoustic: parsed to a real bool ('False' -> False)
+    Keys the user didn't provide stay absent. Raises ValueError on unparseable values.
+    """
+    prefs: Dict = {}
+    for key in ("genre", "mood"):
+        if key in user_prefs and user_prefs[key] is not None:
+            prefs[key] = str(user_prefs[key]).strip().lower()
+    if user_prefs.get("energy") is not None:
+        try:
+            energy = float(user_prefs["energy"])
+        except (TypeError, ValueError):
+            raise ValueError(f"energy must be a number, got {user_prefs['energy']!r}") from None
+        prefs["energy"] = min(1.0, max(0.0, energy))
+    if user_prefs.get("likes_acoustic") is not None:
+        prefs["likes_acoustic"] = _to_bool(user_prefs["likes_acoustic"])
+    return prefs
+
+
 def _genres_related(a: str, b: str) -> bool:
-    """True when one genre name contains the other, e.g. 'indie pop' and 'pop'."""
-    return a in b or b in a
+    """
+    True when two genres share a head word (the last word), e.g. 'indie pop' and 'pop'.
+
+    Whole-word matching avoids substring accidents: 'k-pop' is not 'pop', and
+    'indie' alone is not a kind of 'indie pop' or 'indie folk'.
+    """
+    a_words, b_words = a.split(), b.split()
+    return bool(a_words and b_words) and a_words[-1] == b_words[-1]
 
 
 def _moods_related(a: str, b: str) -> bool:
@@ -131,6 +180,7 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     user_prefs keys: "genre", "mood", "energy" (0-1), optional "likes_acoustic" (bool).
     Returns (score, reasons).
     """
+    user_prefs = normalize_prefs(user_prefs)
     score = 0.0
     reasons: List[str] = []
 
@@ -179,6 +229,7 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     Sorts by score (descending), breaks ties by energy closeness, then title.
     Returns a list of (song_dict, score, explanation).
     """
+    user_prefs = normalize_prefs(user_prefs)
     target_energy = user_prefs.get("energy", 0.5)
 
     # Judge every song: score_song returns (score, reasons) for each one.
